@@ -9,14 +9,17 @@ def extract_titles(markdown: str) -> list[str]:
   return titles
 
 
+def write_file(filename: str, content: str) -> None:
+  if os.path.exists(f"uploads/{filename}"):
+    raise HTTPException(status_code=400, detail="File already exists")
+  with open(f"uploads/{filename}", "w") as f:
+    f.write(content)
+
+
 def upload_markdown(filename: str, markdown: bytes) -> None:
   if not filename.endswith(".md"):
     filename += ".md"
-  if os.path.exists(f"uploads/{filename}"):
-    raise HTTPException(status_code=400, detail="File already exists")
-  decoded_md = markdown.decode('utf-8')
-  with open(f"uploads/{filename}", "w") as f:
-    f.write(decoded_md)
+  write_file(filename, markdown.decode('utf-8'))
   return filename
 
 

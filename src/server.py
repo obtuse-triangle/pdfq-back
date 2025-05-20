@@ -1,3 +1,5 @@
+import json
+import os
 from fastapi import Body, FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 import dotenv
@@ -22,6 +24,7 @@ async def upload_markdown(filename: str, md: bytes = Body(...)):
   subjects = markdownUtils.split_by_title(
     md.decode('utf-8')
   )
+
   # chapters = AiService.generate_chapters(
   #   subjects
   # )
@@ -96,8 +99,43 @@ async def upload_markdown(filename: str, md: bytes = Body(...)):
           }
       ]
   }
+  chapters_json = [{
+    "title": i['title'],
+    "sections": [{"title": j, "question": []} for j in i['sections']]
+  } for i in chapters['chapters']]
+  markdownUtils.write_file(
+    filename=f'{os.path.splitext(filename)[0]}_chapter.json',
+    content=json.dumps(chapters_json, ensure_ascii=False)
+  )
   return {"filename": filename, **chapters}
 
+
+@app.get("/api/files")
+async def get_files():
+  files = []
+  for filename in os.listdir("uploads"):
+    if filename.endswith(".md"):
+      files.append(filename.split(".")[0])
+  return {"files": files}
+
+
+@app.get("/api/files/{filename}")
+async def get_file(filename: str):
+  if not os.path.exists(f"uploads/{filename}.md"):
+    raise HTTPException(status_code=404, detail="File not found")
+  with open(f"uploads/{filename}.md", "r") as f:
+    content = f.read()
+  return {"filename": filename, "content": content}
+
+
+@app.delete("/api/files/{filename}")
+async def delete_file(filename: str):
+  if not filename.endswith(".md"):
+    filename += ".md"
+  if not os.path.exists(f"uploads/{filename}"):
+    raise HTTPException(status_code=404, detail="File not found")
+  os.remove(f"uploads/{filename}")
+  return {"filename": filename, "deleted": True}
 
 if __name__ == "__main__":
   import uvicorn
