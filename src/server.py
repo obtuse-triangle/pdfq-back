@@ -125,7 +125,9 @@ async def get_file(filename: str):
     raise HTTPException(status_code=404, detail="File not found")
   with open(f"uploads/{filename}.md", "r") as f:
     content = f.read()
-  return {"filename": filename, "content": content}
+  with open(f"uploads/{filename}_chapter.json", "r") as f:
+    chapters = json.load(f)
+  return {"filename": filename, "content": content, "chapters": chapters}
 
 
 @app.delete("/api/files/{filename}")

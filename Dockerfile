@@ -1,4 +1,4 @@
-FROM python:3.12
+FROM python:3.12-slim
 RUN pip3 install poetry --break-system-packages
 WORKDIR /app
 COPY pyproject.toml poetry.lock ./
