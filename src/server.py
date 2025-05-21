@@ -121,7 +121,7 @@ async def get_files():
 
 @app.get("/api/files/{filename}")
 async def get_file(filename: str):
-  if not os.path.exists(f"uploads/{filename}.md"):
+  if not os.path.exists(f"uploads/{filename}.md") or not os.path.exists(f"uploads/{filename}_chapter.json"):
     raise HTTPException(status_code=404, detail="File not found")
   with open(f"uploads/{filename}.md", "r") as f:
     content = f.read()
@@ -132,11 +132,10 @@ async def get_file(filename: str):
 
 @app.delete("/api/files/{filename}")
 async def delete_file(filename: str):
-  if not filename.endswith(".md"):
-    filename += ".md"
-  if not os.path.exists(f"uploads/{filename}"):
+  if not os.path.exists(f"uploads/{filename}.md") or not os.path.exists(f"uploads/{filename}_chapter.json"):
     raise HTTPException(status_code=404, detail="File not found")
-  os.remove(f"uploads/{filename}")
+  os.remove(f"uploads/{filename}.md")
+  os.remove(f"uploads/{filename}_chapter.json")
   return {"filename": filename, "deleted": True}
 
 if __name__ == "__main__":
