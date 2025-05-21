@@ -1,8 +1,10 @@
+from pydantic import BaseModel
 import json
 import os
 from fastapi import Body, FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 import dotenv
+import data as AiDB
 import markdownUtils
 import AiService
 
@@ -20,10 +22,12 @@ app.add_middleware(
 
 @app.post("/api/upload/{filename}")
 async def upload_markdown(filename: str, md: bytes = Body(...)):
-  filename = markdownUtils.upload_markdown(filename, md)
+  markdownUtils.upload_markdown(filename, md)
   subjects = markdownUtils.split_by_title(
     md.decode('utf-8')
   )
+
+  AiDB.add_subjects(subjects, filename)
 
   # chapters = AiService.generate_chapters(
   #   subjects
@@ -110,6 +114,12 @@ async def upload_markdown(filename: str, md: bytes = Body(...)):
   return {"filename": filename, **chapters}
 
 
+@app.post("/api/files/{filename}/query")
+async def query_file(filename: str, query: str = Body(...)):
+  results = AiDB.query(query, filename)
+  return {"results": results}
+
+
 @app.get("/api/files")
 async def get_files():
   files = []
@@ -137,6 +147,21 @@ async def delete_file(filename: str):
   os.remove(f"uploads/{filename}.md")
   os.remove(f"uploads/{filename}_chapter.json")
   return {"filename": filename, "deleted": True}
+
+
+@app.post("/api/files/{filename}/questions")
+async def generate_questions(filename: str, section: str = Body(...)):
+  if not os.path.exists(f"uploads/{filename}.md") or not os.path.exists(f"uploads/{filename}_chapter.json"):
+    raise HTTPException(status_code=404, detail="File not found")
+  with open(f"uploads/{filename}_chapter.json", "r") as f:
+    chapters = json.load(f)
+  if section not in [[j['title'] for j in i['sections']] for i in chapters]:
+    raise HTTPException(status_code=404, detail="Chapter not found")
+  context = AiService.get_context(
+    filename=f"uploads/{filename}.md",
+    section=section
+  )
+  questions = AiService.generate_questions()
 
 if __name__ == "__main__":
   import uvicorn

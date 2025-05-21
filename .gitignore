@@ -2,3 +2,4 @@
 __pycache__
 src/uploads/*
 !src/uploads/.gitkeep
+src/chroma
