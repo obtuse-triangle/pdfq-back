@@ -7,6 +7,7 @@ from typing import List
 
 dotenv.load_dotenv()
 DifyChapterToken = os.getenv("DifyChapterToken")
+DifyQuestionToken = os.getenv("DifyQuestionToken")
 
 
 class Chapter(BaseModel):
@@ -32,6 +33,26 @@ def generate_chapters(subjects: list[str]) -> ChaptersResponse:
     json={
       "inputs": {
         "query": "\n".join(titles),
+      },
+      "response_mode": "blocking",
+      "user": "asdf-1234"
+    }
+  )
+  res = res.json()
+  return json.loads(res['answer'])
+
+
+def generate_questions(subject: str, context: str):
+  res = requests.post(
+    "https://dify.obtuse.kr/v1/completion-messages",
+    headers={
+      'Authorization': f'Bearer {DifyQuestionToken}',
+      'Content-Type': 'application/json'
+    },
+    json={
+      "inputs": {
+        "subject": subject,
+        "context": context
       },
       "response_mode": "blocking",
       "user": "asdf-1234"

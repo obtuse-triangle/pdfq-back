@@ -111,7 +111,7 @@ async def upload_markdown(filename: str, md: bytes = Body(...)):
     filename=f'{os.path.splitext(filename)[0]}_chapter.json',
     content=json.dumps(chapters_json, ensure_ascii=False)
   )
-  return {"filename": filename, **chapters}
+  return {"filename": filename, "chapters": chapters_json}
 
 
 @app.post("/api/files/{filename}/query")
@@ -157,11 +157,11 @@ async def generate_questions(filename: str, section: str = Body(...)):
     chapters = json.load(f)
   if section not in [[j['title'] for j in i['sections']] for i in chapters]:
     raise HTTPException(status_code=404, detail="Chapter not found")
-  context = AiService.get_context(
-    filename=f"uploads/{filename}.md",
-    section=section
+  context = AiDB.query(
+    section, filename
   )
-  questions = AiService.generate_questions()
+  questions = AiService.generate_questions("\n".join(context['documents'][0]))
+  return questions
 
 if __name__ == "__main__":
   import uvicorn
