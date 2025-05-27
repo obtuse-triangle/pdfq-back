@@ -155,12 +155,16 @@ async def generate_questions(filename: str, section: str = Body(...)):
     raise HTTPException(status_code=404, detail="File not found")
   with open(f"uploads/{filename}_chapter.json", "r") as f:
     chapters = json.load(f)
-  if section not in [[j['title'] for j in i['sections']] for i in chapters]:
-    raise HTTPException(status_code=404, detail="Chapter not found")
+  sections = [section['title']
+              for chapter in chapters for section in chapter['sections']]
+  if section not in sections:
+    raise HTTPException(
+      status_code=404, detail=f"Chapter '{section}' not found\nAvailable chapters: {', '.join(sections)}")
   context = AiDB.query(
     section, filename
   )
-  questions = AiService.generate_questions("\n".join(context['documents'][0]))
+  questions = AiService.generate_questions(
+    subject=section, context="\n".join(context['documents'][0]))
   return questions
 
 if __name__ == "__main__":
